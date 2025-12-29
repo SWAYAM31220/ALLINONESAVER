@@ -1,7 +1,10 @@
+import os
 import time
 import threading
 import requests
 from flask import Flask, jsonify
+from dotenv import load_dotenv
+
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -16,10 +19,17 @@ from telegram.ext import (
     filters
 )
 
-# ================== CONFIG ==================
-BOT_TOKEN = "YOUR_NEW_BOT_TOKEN"
-LOG_CHANNEL_ID = "@your_log_channel"
+# ================== ENV LOAD ==================
+load_dotenv()
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+LOG_CHANNEL_ID = os.getenv("LOG_CHANNEL_ID")
+PORT = int(os.getenv("PORT", 10000))
+
 API_BASE = "https://socialdown.itz-ashlynn.workers.dev"
+
+if not BOT_TOKEN or not LOG_CHANNEL_ID:
+    raise RuntimeError("BOT_TOKEN or LOG_CHANNEL_ID missing in environment")
 
 # ================== FLASK APP ==================
 app = Flask(__name__)
@@ -33,7 +43,7 @@ def health():
 
 
 def run_flask():
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=PORT)
 
 
 # ================== RATE LIMIT ==================
@@ -132,7 +142,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🎬 YouTube content found\n\nChoose format:",
             reply_markup=keyboard
         )
-        return
 
 
 # ================== CALLBACK HANDLER ==================
@@ -171,8 +180,5 @@ def run_bot():
 
 # ================== MAIN ==================
 if __name__ == "__main__":
-    # Flask in background
-    threading.Thread(target=run_flask).start()
-
-    # Telegram bot
+    threading.Thread(target=run_flask, daemon=True).start()
     run_bot()
